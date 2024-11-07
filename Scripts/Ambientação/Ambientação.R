@@ -70,6 +70,7 @@ pacman::p_load(pacman,
 # xlsx
 
 dados_xlsx <- readxl::read_excel("Scripts/Ambientação/dados/dados.xlsx", sheet = "dados_2")
+dados_xlsx2 <- readxl::read_excel("Scripts/Ambientação/dados/dados.xlsx", sheet = "dados_1")
 
 # Unindo arquivos xlsx
 
