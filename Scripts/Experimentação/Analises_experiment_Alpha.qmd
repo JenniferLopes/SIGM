@@ -21,7 +21,8 @@ pacman::p_load(lmerTest, lme4, broom, plotly, tidyverse, desplot, broom.mixed, e
 ## Importando os dados
 
 ```{r}
-dados <- read_xlsx("alpha_lattice.xlsx")
+
+dados <- alpha_lattice
 
 ```
 
