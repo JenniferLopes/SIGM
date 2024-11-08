@@ -22,8 +22,9 @@ pacman::p_load(lmerTest, lme4, broom, plotly, tidyverse, desplot, broom.mixed, e
 
 ```{r}
 
-dados <- alpha_lattice
+alpha_lattice <- read_excel("Scripts/Experimentação/dados/alpha_lattice.xlsx")
 
+dados <- alpha_lattice
 ```
 
 #### Sobre os dados
