@@ -70,15 +70,18 @@ croqui <- dados %>%
   ggplot(aes(x = col, y = row, fill = inc.bloco )) +
   geom_tile(color = "black")+
   geom_text(aes(label = gen))+
-  theme_bw()+
+  theme_bw() +
+  
   theme(panel.border = element_blank(),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())+
+  
   facet_wrap(~ rep, scales = "free_x")+
   labs(title = "Croqui de campo",
        x= "Colunas", y= "Linhas",
        caption = "SIGM, 2024.")
 
+croqui
 ```
 
 #### Utilizando o pacote desplot()
@@ -87,12 +90,12 @@ croqui <- dados %>%
 
 ```{r}
 
-desplot(data = dados, flip = F,
+desplot::desplot(data = dados,
         form = gen ~ col + row | rep,          
         text = gen, cex = 0.7, shorten = "no", 
         out1 = rep,                            
         out2 = inc.bloco,                      
-        main = "Croqui de campo - SIGM 2024.", show.key = T)
+        main = "Croqui de campo - SIGM 2024.", show.key = F)
 
 ```
 
@@ -100,15 +103,16 @@ desplot(data = dados, flip = F,
 
 ```{r}
 
-# Funçãoo desc_stat ( ) ----------------------------------------------------
+# Funçãoo desc_stat() ----------------------------------------------------
 # Para calcular todas as estatísticas de uma só vez
 
 
 # CV, máximo, média, mediana, mínimo, desvio padrão da amostra
 # erro padrão e intervalo de confianca da média
+# stats = "main"= emite 7 tipos de estatísticas
 
 dados %>%
-  desc_stat(prod, hist = TRUE, stats = "all")  # stats = "main"= emite 7 tipos de estatísticas
+  metan::desc_stat(prod, hist = TRUE, stats = "main") 
 
 ```
 
@@ -135,31 +139,33 @@ dados %>%
 ```
 
 ```{r}
-plotdata <- dados %>% 
+plotdados <- dados %>% 
   group_by(gen) %>% 
-  mutate(mean_prod = mean(prod)) %>% # add column with mean yield per gen
+  mutate(mean_prod = mean(prod)) %>% 
   ungroup() %>% 
-  mutate(gen = fct_reorder(.f = gen, .x = mean_prod)) # sort factor variable by mean yield
+  mutate(gen = fct_reorder(.f = gen, .x = mean_prod)) 
+plotdados
 ```
 
 ```{r}
-ggplot(data = plotdata, 
+pd1 <- ggplot(data = plotdados, 
        aes(x = gen)) +
   geom_point(aes(y = prod, shape = rep)) +  
   geom_point(aes(y = mean_prod), color = "cornflowerblue") + 
-  ylim(0, NA) +   # force y-axis to start at 0
+  ylim(0, NA) + 
+  
   labs(caption = "Pontos em azul representam a média por genótipo.",
        x= "Genótipo", y="Produção") +
-  theme_classic() + # clearer plot format 
+  theme_classic() +  
   theme(axis.text.x = element_text(angle=90, vjust=0.5)) 
 
-
+pd1
 ```
 
 ```{r}
 dados %>% 
-  ggplot(aes(x = gen,  y = prod, fill = gen))+
-  geom_boxplot()+
+  ggplot(aes(x = gen, y = prod, fill = gen))+
+  geom_boxplot(show.legend = F)+
   theme_classic()+
   labs(title = "Distribuição da produtividade por genótipo", 
        x= "Genótipo", y= "Produção",
@@ -169,7 +175,7 @@ dados %>%
 ```{r}
 dados %>% 
   ggplot(aes(x = rep,  y = prod, fill = rep))+
-  geom_boxplot()+
+  geom_boxplot(outliers = F)+
   theme_classic()+
   labs(title = "Distribuição da produtividade por genótipo", 
        x= "Repetição", y= "Produção",
@@ -179,8 +185,6 @@ dados %>%
 ## Modelagem
 
 #### **Modelo com `gen` como efeito fixo:**
-
-**Qual é o efeito dos genótipos sobre o rendimento?**
 
 ```{r}
 
@@ -405,49 +409,78 @@ BLUPs <- BLUPs %>%
 
 ```{r}
 
-ggplot(BLUPs, aes(x = gen, y = BLUP)) +
-  geom_bar(stat = "identity", fill = "#588157", color = "black", width = 0.7) +
+gblup <- ggplot(BLUPs, aes(x = gen, y = BLUP)) +
+  geom_bar(
+    stat = "identity",
+    fill = "#588157",
+    color = "black",
+    width = 0.7) +
+  
   geom_errorbar(aes(ymin = IC_inferior, ymax = IC_superior), width = 0.2) +
-  geom_hline(yintercept = media_blup, color = "red", linetype = "dashed", size = 0.8) +
+  geom_hline(
+    yintercept = media_blup,
+    color = "red",
+    linetype = "dashed",
+    size = 0.8) +
+  
   theme_minimal() +
-  labs(title = "",
-       x = "Genótipos", y = "Valor Predito",
-       caption = "SIGM, 2024.") + 
+  labs(
+    title = "",
+    x = "Genótipos",
+    y = "Valor Predito",
+    caption = "SIGM, 2024.") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
   
-
+gblup
 ```
 
+## Análise de grupamento
+
 ```{r}
+
 # Calcula a distância euclidiana
+
 blup_values <- BLUPs$BLUP
-names(blup_values) <- BLUPs$gen  # Nomeia cada valor com o genótipo correspondente
+
+names(blup_values) <- BLUPs$gen  # nomeia cada valor com o genótipo correspondente
 ```
 
 ```{r}
 
-dist_blups <- dist(blup_values, method = "euclidean")  # Distância euclidiana
+dist_blups <- dist(blup_values, method = "euclidean")  
 
-# Aplica a clusterização hierárquica usando UPGMA
 hc <- hclust(dist_blups, method = "average")  # UPGMA (média)
 
 
 ```
 
 ```{r}
+
 # Define o valor de Mojena para o ponto de corte
-c_value <- 1.25  # Valor sugerido
+
+c_value <- 1.25 
+
 heights <- hc$height
+
 cut_height <- mean(heights) + c_value * sd(heights)
 ```
 
 ```{r}
 
 # Plot do dendrograma com o ponto de corte de Mojena
-plot(hc, main = "Dendrograma", 
-     xlab = "Genótipos", ylab = "Distância", cex = 0.8, sub = "")
+plot(
+  hc,
+  main = "Dendrograma",
+  xlab = "Genótipos",
+  ylab = "Distância",
+  cex = 0.8,
+  sub = "")
 
-abline(h = cut_height, col = "red", lty = 2, lwd = 1.5)  # Linha de corte
+abline(
+  h = cut_height,
+  col = "red",
+  lty = 2,
+  lwd = 1.5)  # Linha de corte
 
 # Determina os clusters com o ponto de corte de Mojena
 cluster_groups <- cutree(hc, h = cut_height)
@@ -489,12 +522,27 @@ pvals <- merge(pvals, raw_m, by = "gen")
 ```
 
 ```{r}
-pvals %>% 
-  ggplot(aes(x = BLUE, y = BLUP))+
-  geom_smooth(se = F, color = "red",  size = 0.8, method = "lm", formula = y ~ x )+
-  geom_abline(slope = 1, intercept = 0, color = "black", size = 0.8, linetype = 2)+
-  geom_point(size = 3, alpha = 0.5)+
-  stat_regline_equation()+
-  theme_bw()+
+
+ggreg <- pvals %>%
+  ggplot(aes(x = BLUE, y = BLUP)) +
+  geom_smooth(
+    se = F,
+    color = "red",
+    size = 0.8,
+    method = "lm",
+    formula = y ~ x) +
+  
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    color = "black",
+    size = 0.8,
+    linetype = 2) +
+  
+  geom_point(size = 3, alpha = 0.5) +
+  stat_regline_equation() +
+  theme_bw() +
   coord_fixed()
+
+ggreg
 ```

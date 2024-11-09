@@ -10,6 +10,7 @@
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 
 # Carregue e instale os pacotes necessários com pacman::p_load
+
 pacman::p_load(
   tidyverse,  # Manipulação e visualização de dados
   DT,         # Tabelas dinâmicas
@@ -18,13 +19,10 @@ pacman::p_load(
   viridis,    # Paleta de cores para gráficos
   plotly,     # Gráficos interativos
   ggridges,   # Visualizações de densidade em cristas
-  janitor)    # Limpeza de dados
-library(tibble)
-library(dplyr)
-library(ggplot2)
-library(forcats)
-library(glue)
-library(ggtext)
+  janitor,    # Limpeza de dados
+  ggtext,     # Adiciona texto
+  glue,
+  tibble)
 
 # Argumentos das funções --------------------------------------------------------------
 
@@ -53,7 +51,7 @@ library(ggtext)
 
 # Importação dos data= dados ----------------------------------------------------
 
-dados <- read_excel("Scripts/Visualização/visualizacao.xlsx")
+dados <- read_excel("Scripts/Visualização/dados/dados.xlsx")
 
 # geom_point() -------------------------------------------------------
 

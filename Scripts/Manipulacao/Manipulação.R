@@ -144,7 +144,8 @@ group_by_jeni <- function(data, ..., summary_funcs) {
     dplyr::summarise(across(where(is.numeric), summary_funcs, .names = "{.col}_{.fn}"))
 }
 
-group_by_jeni(dados, HIB, AMB, summary_funcs = list(mean = mean, sd = sd))
+
+group_by_jeni(dados, HIB, AMB, summary_funcs = list(sd = sd))
 
 group_by_jeni(dados, AMB, summary_funcs = list(mean = mean, sd = sd))
 
@@ -209,7 +210,6 @@ resultado_right <- dados_inner1 %>%
 resultado_full <- dados_inner1 %>%
   full_join(dados_inner2, by = "AMB")
 
-semi_join() 
 
 # retorna apenas as linhas de dados_inner1 que têm correspondências em dados_inner2, 
 # sem adicionar colunas de dados_inner2.

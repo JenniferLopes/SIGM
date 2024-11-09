@@ -72,10 +72,6 @@ pacman::p_load(pacman,
 dados_xlsx <- readxl::read_excel("Scripts/Ambientação/dados/dados.xlsx", sheet = "dados_2")
 dados_xlsx2 <- readxl::read_excel("Scripts/Ambientação/dados/dados.xlsx", sheet = "dados_1")
 
-# Unindo arquivos xlsx
-
-dados_unidos <- dplyr::left_join(dados_xlsx, dados_xlsx2, by = "TRAT")
-
 # web
 
 dados_csv <- readr::read_csv("https://raw.githubusercontent.com/JenniferLopes/index_selection/refs/heads/main/selections_by_index.csv")
@@ -120,6 +116,7 @@ genotipos <- paste0("GEN", 1:10)
 altura_planta <- c(70, 75, 80, 85, 90, 98, 85, 80, 83, 100)
 
 df <- data.frame(genotipos, altura_planta)
+df
 
 #######################################################################################################
 
@@ -128,36 +125,36 @@ df <- data.frame(genotipos, altura_planta)
 
 # Exportação individual
 
-write_xlsx(dados_xlsx, "Scripts/Ambientação/output/dados_final.xlsx")
-
-# lista_dfs: É uma lista onde cada elemento é um data frame, e o nome de cada elemento será o nome da aba no arquivo Excel.
-# addWorksheet(): Adiciona uma nova aba no arquivo Excel com o nome fornecido.
-# writeData(): Escreve o conteúdo de cada data frame na aba correspondente.
-# saveWorkbook(): Salva o arquivo Excel no diretório especificado com o nome definido
+writexl::write_xlsx(dados_xlsx, "Scripts/Ambientação/output/dados_final.xlsx")
 
 # Exportação de multiplos arquivos - Função
 
-exportar_multiplos_dfs <- function(lista_dados, nome_arquivo) {
-  # Cria um novo arquivo Excel
-  workbook <- createWorkbook()
+exportar_multiplos_dfs_jeni <- function(lista_dados, nome_arquivo) {
+  # Carrega a biblioteca openxlsx
+  library(openxlsx)
+  
+  # Cria um novo workbook (arquivo Excel)
+  novo_arquivo <- createWorkbook()
   
   # Itera sobre a lista de data frames
   for (nome in names(lista_dados)) {
-    # Adiciona uma nova aba (sheet) com o nome do data frame
-    addWorksheet(workbook, sheetName = nome)
+    # Adiciona uma nova aba (worksheet) com o nome do data frame
+    addWorksheet(novo_arquivo, sheetName = nome)
     
     # Escreve o data frame na aba correspondente
-    writeData(workbook, sheet = nome, lista_dados[[nome]])
+    writeData(novo_arquivo, sheet = nome, lista_dados[[nome]])
   }
   
   # Salva o arquivo Excel
-  saveWorkbook(workbook, file = nome_arquivo, overwrite = TRUE)
+  saveWorkbook(novo_arquivo, file = nome_arquivo, overwrite = TRUE)
 }
 
 # Criando uma lista com os data frames
 
-lista_dados <- list(arquivo1 = dados_csv, arquivo2 = dados_xlsx)
+lista_dados <- list(arquivo1 = dados_csv, 
+                    arquivo2 = dados_xlsx,
+                    arquivo3= dados_xlsx2)
 
 # Exportando todos os data frames para um arquivo Excel com múltiplas abas
 
-exportar_multiplos_dfs(lista_dados, "dados_completos.xlsx")
+exportar_multiplos_dfs_jeni(lista_dados, "dados_completos.xlsx")
