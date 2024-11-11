@@ -21,14 +21,25 @@
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 
 pacman::p_load(
-  broom, broom.mixed, desplot, emmeans, ggpubr, lme4, lmerTest,
-  multcomp, multcompView, plotly, tidyverse, writexl
-)
+  broom,
+  broom.mixed,
+  desplot,
+  emmeans,
+  ggpubr,
+  lme4,
+  lmerTest,
+  multcomp,
+  multcompView,
+  plotly,
+  tidyverse,
+  writexl)
 
 # Importando os dados
-dados <- alpha_lattice
+
+dados <- read_excel("Scripts/Experimentação/dados/alpha_lattice.xlsx")
 
 # Visão geral dos dados
+
 dplyr::glimpse(dados)
 
 # Estrutura dos dados:
@@ -58,8 +69,7 @@ croqui
 desplot::desplot(
   data = dados, form = gen ~ col + row | rep,
   text = gen, cex = 0.7, shorten = "no", out1 = rep, out2 = inc.bloco,
-  main = "Croqui de campo - SIGM 2024", show.key = TRUE
-)
+  main = "Croqui de campo - SIGM 2024", show.key = TRUE)
 
 # Análise descritiva
 dados %>% metan::desc_stat(prod, hist = TRUE, stats = "main")
