@@ -6,6 +6,40 @@ format: html
 editor: visual
 ---
 
+-   **Efeitos Fixos**: Representam fatores de interesse específico que se quer avaliar diretamente.
+
+-   Os genótipos são tratados como efeitos fixos quando o objetivo é entender o impacto de cada um na variável de resposta, como o rendimento.
+
+-   As estimativas associadas são chamadas de BLUEs (Best Linear Unbiased Estimates).
+
+-   **Efeitos Aleatórios**: Representam fatores vistos como uma amostra de uma população maior, com foco na variabilidade entre os níveis.
+
+-   Ao tratar os genótipos como efeitos aleatórios, as estimativas são chamadas de BLUPs (Best Linear Unbiased Predictions).
+
+-   Esse tipo de modelagem ajuda a entender a variabilidade entre genótipos e a prever a resposta esperada de um genótipo de uma população.
+
+-   Exemplos incluem blocos e parcelas ou os próprios genótipos, quando vistos como uma amostra da população.
+
+## O que queremos responder com esse experimento?
+
+1.  Qual é o efeito dos genótipos sobre o rendimento?
+
+Avaliar o impacto dos genótipos no rendimento, considerando-os como efeitos fixos em um modelo misto (mod.fg) e como efeitos aleatórios em outro (mod.rg).
+
+2.  Quais genótipos têm as melhores performances médias ajustadas (BLUEs) ou predições (BLUPs)?
+
+Comparar as estimativas dos genótipos em termos de BLUEs e BLUPs para escolher aqueles com melhores desempenhos.
+
+3.  Qual é a herdabilidade associada aos genótipos?
+
+Calcular a herdabilidade para avaliar a proporção de variabilidade que é geneticamente determinada e o potencial de seleção.
+
+4.  Realizar uma análise de agrupamento hierárquico para identificar a similaridade genética.
+
+<!-- -->
+
+4.  Qual a correlação entre as estimativas BLUE e BLUP?
+
 ## Instalação e carregamento dos pacotes
 
 **Se ainda não tiver o pacman() instalado, instale com:**
@@ -15,14 +49,26 @@ if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 ```
 
 ```{r}
-pacman::p_load(lmerTest, lme4, broom, plotly, tidyverse, desplot, broom.mixed, emmeans, multcomp, multcompView, ggpubr, writexl)
+
+pacman::p_load(
+    broom,         # Converte modelos estatísticos em data frames organizados
+    broom.mixed,   # Extensão do broom para modelos mistos
+    desplot,       # Visualizações para dados espaciais
+    emmeans,       # Estimativas de médias marginais e comparações
+    ggpubr,        # Ferramentas para aprimorar gráficos com ggplot2
+    lme4,          # Modelos lineares e não-lineares mistos
+    lmerTest,      # Testes de significância para modelos lineares mistos
+    multcomp,      # Testes de comparações múltiplas
+    multcompView,  # Visualizações de comparações múltiplas
+    plotly,        # Gráficos interativos
+    tidyverse,     # Coleção de pacotes para manipulação e visualização de dados
+    writexl,)     # Exportação de data frames para arquivos Excel (.xlsx)
+
 ```
 
 ## Importando os dados
 
 ```{r}
-
-alpha_lattice <- read_excel("Scripts/Experimentação/dados/alpha_lattice.xlsx")
 
 dados <- alpha_lattice
 ```
@@ -58,6 +104,7 @@ dados$gen <- as.factor(dados$gen)
 dados$rep <- as.factor(dados$rep)
 
 dados$inc.bloco <- as.factor(dados$inc.bloco)
+
 ```
 
 ## Croqui de campo
@@ -95,7 +142,7 @@ desplot::desplot(data = dados,
         text = gen, cex = 0.7, shorten = "no", 
         out1 = rep,                            
         out2 = inc.bloco,                      
-        main = "Croqui de campo - SIGM 2024.", show.key = F)
+        main = "Croqui de campo - SIGM 2024.", show.key = T)
 
 ```
 
@@ -112,9 +159,10 @@ desplot::desplot(data = dados,
 # stats = "main"= emite 7 tipos de estatísticas
 
 dados %>%
-  metan::desc_stat(prod, hist = TRUE, stats = "main") 
-
+  metan::desc_stat(prod, hist = TRUE, stats = "main")
 ```
+
+## Análise exploratória
 
 #### Análise da repetição
 
@@ -124,7 +172,6 @@ dados %>%
   summarize(mean    = mean(prod),
             std.dev = sd(prod),
             cv      = std.dev/mean)
-
 ```
 
 #### Análise dos blocos incompletos
@@ -135,31 +182,8 @@ dados %>%
   group_by(rep, inc.bloco) %>% 
   summarize(mean    = mean(prod),
             std.dev = sd(prod),
-            cv      = std.dev/mean)
-```
-
-```{r}
-plotdados <- dados %>% 
-  group_by(gen) %>% 
-  mutate(mean_prod = mean(prod)) %>% 
-  ungroup() %>% 
-  mutate(gen = fct_reorder(.f = gen, .x = mean_prod)) 
-plotdados
-```
-
-```{r}
-pd1 <- ggplot(data = plotdados, 
-       aes(x = gen)) +
-  geom_point(aes(y = prod, shape = rep)) +  
-  geom_point(aes(y = mean_prod), color = "cornflowerblue") + 
-  ylim(0, NA) + 
-  
-  labs(caption = "Pontos em azul representam a média por genótipo.",
-       x= "Genótipo", y="Produção") +
-  theme_classic() +  
-  theme(axis.text.x = element_text(angle=90, vjust=0.5)) 
-
-pd1
+            cv      = std.dev/meam,
+            median  = median(prod))
 ```
 
 ```{r}
@@ -172,19 +196,15 @@ dados %>%
        caption = "SIGM 2024.")
 ```
 
-```{r}
-dados %>% 
-  ggplot(aes(x = rep,  y = prod, fill = rep))+
-  geom_boxplot(outliers = F)+
-  theme_classic()+
-  labs(title = "Distribuição da produtividade por genótipo", 
-       x= "Repetição", y= "Produção",
-       caption = "SIGM 2024.")
-```
-
 ## Modelagem
 
+Redução de Viés: a inclusão de efeitos aleatórios ajuda a lidar com a variação aleatória entre blocos ou parcelas, tornando as estimativas dos efeitos fixos mais robustas.
+
+Estimativas de Herdabilidade.
+
 #### **Modelo com `gen` como efeito fixo:**
+
+**Objetivo:** o modelo ajusta a produção (prod) considerando os genótipos como efeito fixo, para estimar o efeito de cada genótipo. Também leva em conta as repetições como efeitos fixos e a variação dentro dos blocos incompletos como um efeito aleatório.
 
 ```{r}
 
@@ -194,24 +214,40 @@ mod.fg <- lmer(prod ~ gen + rep + (1 | rep:inc.bloco), data = dados)
 
 -   **`prod ~ gen`**: `gen` é um efeito fixo porque queremos saber o efeito de cada genótipo.
 
--   **`(1|bloco)`**: `bloco` é um efeito aleatório, permitindo controlar a variação entre os blocos do experimento dentro de cada repetição.
+-   **`(1|bloco)`**: `bloco` é um efeito aleatório, permitindo controlar a variação entre os blocos do experimento dentro de cada repetição, ajudando a controlar a variabilidade ambiental e aumentando a precisão da análise dos genótipos.
+
+Importante: (1 \| rep:inc.bloco) indica que estamos tratando cada bloco dentro de cada repetição como uma unidade de agrupamento, e o 1 significa que queremos um intercepto (média) aleatório para cada uma dessas unidades.
 
 #### **Modelo com `gen` como efeito aleatório:**
+
+O modelo ajusta a produção (prod) considerando os genótipos como efeitos aleatórios, para estimar a variabilidade genética na população. Também leva em conta as repetições como efeitos fixos e a variação dentro dos blocos incompletos como um efeito aleatório.
 
 ```{r}
 mod.rg <- lmer(prod ~ (1 | gen) + rep + (1 | rep:inc.bloco), data = dados)
 
 ```
 
-1.  **`(1 | gen)`**: representa um **efeito aleatório** do fator `gen` (genótipos).
+1.  **`(1 | gen)`**: representa um **efeito aleatório** do fator `gen` (genótipos). (BLUPs)
 
-2.  **`rep`**: representa um **efeito fixo** do fator `rep` (repetição).
+2.  **`rep`**: representa um **efeito fixo** do fator `rep` (repetição). Isso significa que as repetições são tratadas como um fator cujos níveis específicos interessam diretamente na análise, e queremos avaliar o impacto médio desse fator na variável de resposta.
 
-3.  **`(1 | rep:inc.bloco)`**: representa um **efeito aleatório de interação** entre `rep` (repetição) e `inc.bloco` (bloco incompleto)
+3.  **`(1 | rep:inc.bloco)`**: representa um **efeito aleatório de interação** entre `rep` (repetição) e `inc.bloco` (bloco incompleto). Isso é útil para capturar a variação não explicada entre blocos que estão dentro das repetições, controlando de forma mais precisa a variabilidade experimental.
 
 Isso permite estimar os componentes de variância atribuíveis aos genótipos e não comparar diretamente os níveis de genótipos.
 
 ## Análise dos modelos e comparação
+
+### O que é o REML?
+
+-   Verossimilhança?
+
+-   Conjunto de dados, para nossa variável prod, assumo que ela segue uma distribuição normal com média e desvio padrão específicos, a verossimilhança calcula a probabilidade de ver esse conjunto de dados/prod observadas segue esses parâmetros da distribuição.
+
+-   **REML** é um método que maximiza a verossimilhança das componentes de variância ao excluir o efeito dos parâmetros fixos (como médias ou tendências lineares). Ele faz isso decompondo os resíduos e ajustando a variância com base nas partes não explicadas pelos efeitos fixos.
+
+-   É chamado de "restricted" porque usa a verossimilhança residual, que é baseada nas combinações lineares das observações que não dependem dos efeitos fixos.
+
+-   Quanto menor o valor do critério REML, melhor o ajuste do modelo para os dados (desde que se esteja comparando modelos aninhados com a mesma estrutura de efeitos fixos).
 
 #### Resumo do modelo fixo
 
@@ -226,11 +262,13 @@ summary(mod.fg, ddf = "Kenward-Roger")
 summary(mod.rg, ddf = "Kenward-Roger")
 ```
 
-[^1]Kenward-Roger: para calcular os graus de liberdade para os efeitos.
+[^1]Kenward-Roger: para calcular os graus de liberdade para os efeitos- Modelos Mistos e para obtenção de um teste F mais robusto.
 
 [^1]: Kenward, M.G. e Roger, J. H. (1997). Small Sample Inference for Fixed Effects from Restricted Maximum Likelihood. Biometrics, Vol 53, No. 3 pp 983-997 
 
 #### ANOVA efeitos fixos, usamos:
+
+-   Testar se as médias dos grupos (ou níveis dos fatores) são significativamente diferentes entre si.
 
 ```{r}
 mod.fg %>% anova(ddf = "Kenward-Roger")
@@ -239,11 +277,29 @@ mod.fg %>% anova(ddf = "Kenward-Roger")
 
 #### ANOVA efeitos aleatório, usamos:
 
+-   Avaliar a variabilidade entre os níveis dos fatores considerados como amostras de uma população.
+
 ```{r}
 mod.rg %>% anova(ddf = "Kenward-Roger")
 ```
 
 #### RANOVA para efeitos aleatórios:
+
+-   Traz informações sobre a importância do efeito aleatório.
+
+-   Modelo completo x modelo reduzido
+
+-   npar: número de parâmetros no modelo.
+
+-   logLik: Log-verossimilhança do modelo- valores mais altos (menos negativos) indicam um ajuste melhor.
+
+-   AIC (Akaike Information Criterion): valores menores indicam melhor ajuste.
+
+-   LRT (Likelihood Ratio Test): teste de razão de verossimilhança para avaliar a significância do efeito aleatório.
+
+-   Df: Graus de liberdade para o teste LRT. 1 grau de liberdade, pois estamos removendo um único efeito aleatório.
+
+-   Pr(\>Chisq): Valor p associado ao teste LRT. (é significativo? devo removê-lo?)
 
 ```{r}
 mod.fg %>% ranova() 
@@ -254,25 +310,64 @@ mod.rg %>% ranova()
 
 ```
 
+-   O efeito aleatório de `gen` é significativo e deve ser mantido, enquanto o efeito de `rep:inc.bloco` pode ser removido?
+
+-   **`Modelo reduzido: Ignora essa variação adicional de blocos e ajusta apenas os efeitos fixos gen e rep.`**
+
+-   **`O efeito (1 | rep:inc.bloco) não é significativo, o modelo reduzido é suficiente para explicar prod , simplificando a interpretação e economizando parâmetros.`**
+
 -   **ANOVA**: compara a significância dos efeitos fixos.
 
 -   **RANOVA**: testa a significância dos componentes de variância aleatórios.
 
 ## Estimativa dos Componentes da Variância
 
-```{r}
-as.data.frame(VarCorr(mod.fg))
-```
+-   vcov (Variance Component): variância associada a cada componente.
+
+-   sdcor (Standard Deviation of the Component): desvio padrão de cada componente de variância.
 
 ```{r}
+
+# Pacote lme4
+
+as.data.frame(VarCorr(mod.fg))
+
+```
+
+-   A maior parte da variabilidade em prod é atribuída ao componente residual, indicando que o modelo não captura toda a variação na resposta, sugerindo talvez um ajuste ou consideração de variáveis adicionais para explicar essa variabilidade.
+
+```{r}
+
+# Pacote lme4
+
 as.data.frame(VarCorr(mod.rg))
+```
+
+-   A inclusão de gen como um efeito aleatório no modelo permite capturar a variabilidade entre diferentes níveis de gen , enquanto rep:inc.bloco captura a variação adicional entre blocos.
+
+-   O componente residual é o maior contribuinte para a variância total, indicando que, apesar dos efeitos aleatórios, ainda há uma quantidade significativa de variabilidade não explicada.
+
+Como reduzir o erro residual dos componentes da variancia??
+
+```{r}
+# mod.novo <- (prod ~ gen + rep + nova_var + (1 | rep:inc.bloco), data = dados)
 ```
 
 ## Estimativas BLUEs e BLUPs
 
 #### BLUEs (Best Linear Unbiased Estimators)
 
+-   Em estatística, um BLUE é um estimador linear que é o mais preciso (ou seja, tem a menor variância) e não tendencioso para um parâmetro específico.
+
+-   No contexto de modelos de efeitos mistos, o BLUE é frequentemente usado para descrever as estimativas dos efeitos fixos, já que estes são obtidos de maneira que minimizam o erro, enquanto permanecem imparciais.
+
 Para o modelo com `gen` como fixo, calculamos as médias ajustadas dos genótipos:
+
+-   BLUE = emmean : amédia marginal estimada (emmean) representa o BLUE para cada nível de gen.
+
+-   BLUEs fornecem as médias ajustadas para gen, levando em conta o ajuste do modelo para rep e rep:inc.bloco.
+
+-   Essas estimativas são úteis para comparar os níveis de gen enquanto controlamos para outras fontes de variação (como blocos e replicações).
 
 ```{r}
 BLUEs <- emmeans::emmeans(mod.fg, ~ gen) %>%
@@ -287,32 +382,58 @@ head(BLUEs)
 Intervalo de confiança de 95% em vez de um erro padrão simples, você poderia multiplicar `std.error_BLUE` por 1.96:
 
 ```{r}
+
 ggplot2::ggplot(BLUEs, aes(x = gen, y = BLUE)) +
+  
   geom_point(color = "blue", size = 3) +
-  geom_errorbar(aes(ymin = BLUE - 1.96 * std.error_BLUE, ymax = BLUE + 1.96 * std.error_BLUE), 
-              width = 0.2, color = "gray") +
-  labs(title = "Estimativas BLUEs",
-       x = "Genótipos", 
-       y = "BLUE (Best Linear Unbiased Estimator)",
-       caption = "SIGM,2024.") +
+  
+  geom_errorbar(
+    aes(
+      ymin = BLUE - 1.96 * std.error_BLUE,
+      ymax = BLUE + 1.96 * std.error_BLUE),
+    width = 0.2,
+    color = "gray") +
+  
+  labs(
+    title = "Estimativas BLUEs",
+    x = "Genótipos",
+    y = "BLUE (Best Linear Unbiased Estimator)",
+    caption = "SIGM,2024.") +
+  
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 #### BLUPs (Best Linear Unbiased Predictors)
 
-Para o modelo `mod.rg`, calculamos os BLUPs dos genótipos:
+-   Para o modelo `mod.rg`, calculamos os BLUPs dos genótipos:
+
+-   fixef(mod.rg) : extrai os coeficientes de efeitos fixos do modelo misto mod.rg.
+
+-   fixef(mod.rg)\[1\] : intercepto do modelo, ou seja, a média geral (μ).
+
+-   fixef(mod.rg)\[2:3\] : seleciona outros efeitos fixos, que podem representar variáveis adicionais no modelo, como blocos.
+
+-   sum(fixef(mod.rg)\[2:3\])/3 : assumimos que os efeitos fixos (excluindo o intercepto) precisam ser ajustados na média; neste caso, somamos e dividimos por 3, embora esse ajuste dependa do modelo e do contexto.
 
 ```{r}
+
+# média ajustada
+
 mu_manual <- fixef(mod.rg)[1] + sum(fixef(mod.rg)[2:3])/3
 
 ```
 
 ```{r}
-BLUPs <- augment(ranef(mod.rg)) %>%
-  filter(grp == "gen") %>%
+
+BLUPs <- augment(ranef(mod.rg)) %>%  # transforma em df os compon do mod.rg
+  filter(grp == "gen") %>% # efeitos aleatórios associados ao "gen"
   transmute(gen = level, BLUP = mu_manual + estimate, std.error_BLUP = std.error)
+
+BLUPs
 ```
+
+Os BLUPs que calculamos representam a média esperada para cada genótipo ajustada pelos efeitos específicos de cada um, considerando o intercepto (ou média geral) do modelo e os desvios dos efeitos aleatórios.
 
 ## Herdabilidade
 
@@ -329,19 +450,27 @@ $$ onde ( V_g ) é a variância dos genótipos e ( V_e ) é o erro residual.
 ```{r}
 vcomps <- as.data.frame(VarCorr(mod.rg))
 
+vcomps
+
 ```
 
 #### Seleção da Variância Genética:
 
 ```{r}
+
 vc.g <- vcomps[vcomps$grp == "gen", "vcov"]
+
+vc.g
 
 ```
 
 #### Seleção da Variância Residual
 
 ```{r}
+
 vc.e <- vcomps[vcomps$grp == "Residual", "vcov"]
+
+vc.e
 
 ```
 
@@ -353,13 +482,7 @@ nreps = 3
 
 hc <- vc.g / (vc.g + vc.e / nreps)
 
-```
-
-#### head herdabilidade
-
-```{r}
-
-head(hc)
+hc
 
 ```
 
@@ -402,9 +525,12 @@ head(media_blup)
 ```
 
 ```{r}
+
 BLUPs <- BLUPs %>%
   arrange(desc(BLUP)) %>%
   mutate(gen = factor(gen, levels = gen))
+
+BLUPs
 ```
 
 ```{r}
@@ -450,7 +576,6 @@ names(blup_values) <- BLUPs$gen  # nomeia cada valor com o genótipo corresponde
 dist_blups <- dist(blup_values, method = "euclidean")  
 
 hc <- hclust(dist_blups, method = "average")  # UPGMA (média)
-
 
 ```
 

@@ -12,15 +12,15 @@ if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 # Carregue e instale os pacotes necessários com pacman::p_load
 
 pacman::p_load(
-  tidyverse,  # Manipulação e visualização de dados
-  DT,         # Tabelas dinâmicas
-  readxl,     # Importação de arquivos Excel
-  patchwork,  # Layouts de gráficos combinados
-  viridis,    # Paleta de cores para gráficos
-  plotly,     # Gráficos interativos
-  ggridges,   # Visualizações de densidade em cristas
-  janitor,    # Limpeza de dados
-  ggtext,     # Adiciona texto
+  tidyverse,  
+  DT,         
+  readxl,     
+  patchwork,  
+  viridis,   
+  plotly,     
+  ggridges,   
+  janitor,    
+  ggtext,     
   glue,
   tibble)
 
